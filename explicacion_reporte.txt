@@ -1,0 +1,52 @@
+EXPLICACIÓN DETALLADA PARA LA MAESTRA MARLENE
+=================================================
+Esta es la "Acordeón" técnica que te servirá para contestar todo lo que el instrumento de evaluación te pide. Úsala para rellenar tu reporte.
+
+1. Diagrama de Entidad-Colección (Colecciones de MongoDB)
+---------------------------------------------------------
+¿Qué datos guardan los Usuarios?
+Guardan su _id de MongoDB, nombre completo, correo institucional, contraseña (encriptada con BCrypt), su rol (que puede ser "estudiante", "maestro" o "admin"), un boleano llamado "verificado" (usado para que el admin autorice a los maestros antes de que evalúen) y la fecha de registro.
+
+¿Qué otros campos incluyó Proyectos además del Título y Descripción?
+Además de lo básico, incluimos muchísimos campos clave para la lógica escolar:
+- subido_por: Guarda el ObjectId del estudiante que creó el proyecto.
+- autores_correos: Un arreglo de correos para saber quiénes participaron.
+- estatus: Maneja el flujo de aprobación ("pendiente", "aprobado", "evaluado").
+- promedio_general: Número decimal base 100 calculado automáticamente.
+- evidencias: Un documento anidado que soporta multimedia.
+- evaluaciones_docentes: Arreglo donde se guardan todas las calificaciones de los maestros.
+- fecha_creacion.
+
+
+2. Diagrama de Agregados (Poder del NoSQL)
+---------------------------------------------------------
+¿Las reseñas o comentarios también van dentro del documento del proyecto o en colección aparte?
+¡Van totalmente DENTRO del documento del proyecto! Esto es lo que justifica que usemos NoSQL. No creamos una colección "Reseñas" separada. Todo el arreglo de "evaluaciones_docentes" (con la calificación, la retroalimentación final de texto, y los 5 puntos de la rúbrica) vive incrustado como sub-documento dentro del BSON del Proyecto. Si la API pide el proyecto, la base de datos devuelve el proyecto y sus reseñas de un solo golpe.
+
+¿Los videos y documentos se guardan como una URL dentro del proyecto?
+Correcto. Los archivos (fotos, .docx, .pdf) NO se guardan en crudo dentro de MongoDB, ya que saturarían la base de datos. Se suben a un bucket en Supabase, el cual nos devuelve una cadena de texto (URL pública segura). Esa URL es la que guardamos como String dentro del sub-documento de evidencias en Mongo.
+
+
+3. Diagrama de Patrones de Consulta
+---------------------------------------------------------
+¿Cómo buscarán los usuarios los proyectos?
+Implementamos un sistema de "Query Parameters" dinámico en la ruta GET /api/Proyectos. Los usuarios usarán cajas de texto (filtros) que permiten buscar por:
+a) Título del proyecto (búsqueda parcial usando Regex insensible a mayúsculas).
+b) Correo del autor: Para ver rápidamente el portafolio de un estudiante.
+c) Rango de Calificación (minCal, maxCal): Para filtrar a los proyectos de 100.
+
+¿Qué es lo que más se va a consultar?
+La vista pública del Kiosko: La consulta "GetAprobadosAsync" que filtra la base de datos limitando la vista SÓLO a aquellos proyectos cuyo campo "estatus" sea "aprobado" o "evaluado", omitiendo por seguridad los pendientes.
+
+Índices:
+Para que la API no colapse buscando en miles de proyectos, los campos que tu compañero debe marcar como índices obligatorios en el panel de Atlas MongoDB son: "estatus" (porque todo se filtra por ahí primero), "autores_correos" y "promedio_general".
+
+
+4. Diagrama de Arquitectura del Sistema
+---------------------------------------------------------
+¿Dónde guardarán físicamente los videos/documentos?
+Usamos el ecosistema de "Supabase Storage" alojado en AWS. Mediante el SDK de C# integrado en la API, tomamos el IFormFile que manda el cliente, lo transformamos en bytes y lo subimos directamente a un Bucket Público llamado "evidencias" en Supabase. 
+
+¿Qué framework de Frontend están usando para conectar con tu API de ASP.NET Core 9?
+(Nota: Define aquí tu tecnología real, pero te sugiero esta justificación):
+Diseñamos la API bajo el estilo arquitectónico RESTful, devolviendo C# puros JSON. Por lo tanto, el sistema es agnóstico del Frontend. Para consumir nuestra API protegida por JWT que está automatizada en Swagger, usaremos [ESCRIBE TU RESPUESTA: React / Angular / Vanilla JS] a través del uso de HttpClient o Fetch, mandando los tokens en los Headers "Authorization: Bearer".

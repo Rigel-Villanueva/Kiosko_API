@@ -33,6 +33,11 @@ namespace KioskoAPI.Services
 
         public async Task<Usuario> RegisterAsync(Usuario nuevoUsuario)
         {
+            // Verificar si ya existe un usuario con ese correo
+            var existente = await _usuariosService.GetByCorreoAsync(nuevoUsuario.Correo);
+            if (existente != null)
+                throw new Exception("Ya existe un usuario registrado con ese correo.");
+
             // Cifrar la contraseña antes de guardar en Mongo
             nuevoUsuario.Password = BCrypt.Net.BCrypt.HashPassword(nuevoUsuario.Password);
             
