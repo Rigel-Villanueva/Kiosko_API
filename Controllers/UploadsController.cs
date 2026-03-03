@@ -47,5 +47,34 @@ namespace KioskoAPI.Controllers
                 return StatusCode(500, new { mensaje = "Error al subir el archivo a Storage", detalle = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Elimina un archivo del Storage de Supabase usando su URL pública.
+        /// </summary>
+        /// <param name="url">La URL pública del archivo a eliminar</param>
+        [HttpDelete]
+        [Authorize(Roles = "estudiante")]
+        public async Task<IActionResult> DeleteFile([FromQuery] string url)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(url))
+                {
+                    return BadRequest(new { mensaje = "Se requiere la URL del archivo a eliminar." });
+                }
+
+                await _storageService.DeleteFileAsync(url);
+
+                return Ok(new { mensaje = "Archivo eliminado correctamente" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { mensaje = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = "Error al eliminar el archivo de Storage", detalle = ex.Message });
+            }
+        }
     }
 }

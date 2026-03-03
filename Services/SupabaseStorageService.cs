@@ -54,5 +54,23 @@ namespace KioskoAPI.Services
 
             return publicUrl;
         }
+
+        public async Task DeleteFileAsync(string fileUrl)
+        {
+            if (string.IsNullOrEmpty(fileUrl))
+                throw new ArgumentException("La URL del archivo es requerida.");
+
+            // Extraer el nombre del archivo de la URL pública
+            // URL formato: {URL_BASE}/storage/v1/object/public/{BUCKET}/{NOMBRE_ARCHIVO}
+            var prefix = $"{_supabaseUrl}/storage/v1/object/public/{_bucketName}/";
+            if (!fileUrl.StartsWith(prefix))
+                throw new ArgumentException("La URL no pertenece al storage de este proyecto.");
+
+            var fileName = fileUrl.Substring(prefix.Length);
+
+            await _supabaseClient.Storage
+                .From(_bucketName)
+                .Remove(new List<string> { fileName });
+        }
     }
 }
