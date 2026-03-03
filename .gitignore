@@ -6,6 +6,16 @@
 # dotenv files
 .env
 
+# Archivos innecesarios del proyecto
+build_error.txt
+build_error_cmd.txt
+explicacion_reporte.txt
+WeatherForecast.cs
+Controllers/WeatherForecastController.cs
+
+# Configuración de producción (los secretos van en variables de entorno de Render)
+appsettings.Production.json
+
 # User-specific files
 *.rsuser
 *.suo
