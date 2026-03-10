@@ -1,7 +1,8 @@
 using KioskoAPI.Models;
 using Microsoft.Extensions.Options;
-using System.Net;
-using System.Net.Mail;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace KioskoAPI.Services
 {
@@ -9,35 +10,28 @@ namespace KioskoAPI.Services
     {
         private readonly EmailSettings _emailSettings;
         private readonly ILogger<EmailService> _logger;
+        private readonly HttpClient _httpClient;
 
         public EmailService(IOptions<EmailSettings> emailSettings, ILogger<EmailService> logger)
         {
             _emailSettings = emailSettings.Value;
             _logger = logger;
+            _httpClient = new HttpClient();
         }
 
         /// <summary>
-        /// Envía un correo con el código de verificación al usuario.
-        /// Tiene un timeout de 10 segundos para evitar que se cuelgue.
+        /// Envía un correo con el código de verificación usando la API de Resend (HTTPS).
         /// </summary>
         public async Task SendVerificationEmailAsync(string correoDestino, string codigo)
         {
-            _logger.LogInformation("Intentando enviar correo de verificación a {correo}", correoDestino);
+            _logger.LogInformation("Intentando enviar correo de verificación a {correo} vía Resend API", correoDestino);
 
-            var smtpClient = new SmtpClient(_emailSettings.SmtpServer)
+            var requestBody = new
             {
-                Port = _emailSettings.SmtpPort,
-                Credentials = new NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
-                EnableSsl = true,
-                Timeout = 10000 // 10 segundos timeout
-            };
-
-            var mailMessage = new MailMessage
-            {
-                From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
-                Subject = "Kiosko Escolar - Código de Verificación",
-                IsBodyHtml = true,
-                Body = $@"
+                from = $"{_emailSettings.SenderName} <{_emailSettings.SenderEmail}>",
+                to = new[] { correoDestino },
+                subject = "Kiosko Escolar - Código de Verificación",
+                html = $@"
                     <div style='font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;'>
                         <h2 style='color: #2c3e50; text-align: center;'>Kiosko Escolar</h2>
                         <p>Hola, gracias por registrarte en <strong>Kiosko Escolar</strong>.</p>
@@ -50,21 +44,34 @@ namespace KioskoAPI.Services
                     </div>"
             };
 
-            mailMessage.To.Add(correoDestino);
+            var json = JsonSerializer.Serialize(requestBody);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            // Enviar con timeout usando CancellationToken
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", _emailSettings.ResendApiKey);
+
             try
             {
-                await smtpClient.SendMailAsync(mailMessage, cts.Token);
-                _logger.LogInformation("Correo de verificación enviado exitosamente a {correo}", correoDestino);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                var response = await _httpClient.PostAsync("https://api.resend.com/emails", content, cts.Token);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Correo enviado exitosamente a {correo}. Response: {response}", correoDestino, responseBody);
+                }
+                else
+                {
+                    _logger.LogError("Resend respondió con error {status}: {body}", response.StatusCode, responseBody);
+                    throw new Exception($"Error al enviar correo: {responseBody}");
+                }
             }
             catch (OperationCanceledException)
             {
-                _logger.LogError("Timeout al enviar correo a {correo} (10 segundos)", correoDestino);
-                throw new Exception("El envío del correo tardó demasiado. Intenta con resend-code.");
+                _logger.LogError("Timeout al enviar correo a {correo} vía Resend (10 segundos)", correoDestino);
+                throw new Exception("El envío del correo tardó demasiado.");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogError(ex, "Error al enviar correo a {correo}: {mensaje}", correoDestino, ex.Message);
                 throw;
