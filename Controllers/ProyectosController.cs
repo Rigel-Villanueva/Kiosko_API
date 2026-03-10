@@ -221,29 +221,21 @@ namespace KioskoAPI.Controllers
         }
 
         /// <summary>
-        /// Valida que los tipos de video sean válidos y que no haya duplicados de intro o pitch.
+        /// Valida que no haya más de 1 video con título "Intro" o "Pitch".
         /// </summary>
         private string? ValidarTiposVideo(Proyecto proyecto)
         {
             if (proyecto.Evidencias?.Videos == null || proyecto.Evidencias.Videos.Count == 0)
                 return null;
 
-            var tiposValidos = new[] { "intro", "pitch", "demo", "otro" };
-
-            foreach (var video in proyecto.Evidencias.Videos)
-            {
-                if (!tiposValidos.Contains(video.Tipo.ToLower()))
-                    return $"Tipo de video '{video.Tipo}' no es válido. Usa: intro, pitch, demo u otro.";
-            }
-
-            // No puede haber más de 1 intro y más de 1 pitch
-            var intros = proyecto.Evidencias.Videos.Count(v => v.Tipo.ToLower() == "intro");
-            var pitches = proyecto.Evidencias.Videos.Count(v => v.Tipo.ToLower() == "pitch");
+            // No puede haber más de 1 video con título "Intro" y más de 1 con título "Pitch"
+            var intros = proyecto.Evidencias.Videos.Count(v => v.Titulo.ToLower() == "intro");
+            var pitches = proyecto.Evidencias.Videos.Count(v => v.Titulo.ToLower() == "pitch");
 
             if (intros > 1)
-                return "Solo puede haber 1 video de tipo 'intro' por proyecto.";
+                return "Solo puede haber 1 video con título 'Intro' por proyecto.";
             if (pitches > 1)
-                return "Solo puede haber 1 video de tipo 'pitch' por proyecto.";
+                return "Solo puede haber 1 video con título 'Pitch' por proyecto.";
 
             return null;
         }

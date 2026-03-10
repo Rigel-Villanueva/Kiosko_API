@@ -65,9 +65,6 @@ namespace KioskoAPI.Models
 
         [BsonElement("url")]
         public string Url { get; set; } = null!;
-
-        [BsonElement("tipo")]
-        public string Tipo { get; set; } = "otro"; // "intro", "pitch", "demo", "otro"
     }
 
     [BsonIgnoreExtraElements]

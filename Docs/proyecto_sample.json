@@ -18,14 +18,16 @@
         "repositorio_git": "https://github.com/rigel/sublegados-tours",
         "videos": [
             {
-                "titulo": "Demo Android",
-                "url": "https://firebasestorage.com/v0/b/kiosko/video1.mp4",
-                "tipo": "intro"
+                "titulo": "Intro",
+                "url": "https://firebasestorage.com/v0/b/kiosko/video1.mp4"
             },
             {
-                "titulo": "Pitch Comercial",
-                "url": "https://firebasestorage.com/v0/b/kiosko/video2.mp4",
-                "tipo": "pitch"
+                "titulo": "Pitch",
+                "url": "https://firebasestorage.com/v0/b/kiosko/video2.mp4"
+            },
+            {
+                "titulo": "Demo Android",
+                "url": "https://firebasestorage.com/v0/b/kiosko/video3.mp4"
             }
         ],
         "imagenes": [
