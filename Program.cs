@@ -10,6 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<KioskoDatabaseSettings>(
     builder.Configuration.GetSection("KioskoDatabase"));
 
+// Configure Email settings
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
+
 // Configurar JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["Secret"] ?? throw new ArgumentNullException("JwtSettings:Secret is missing");
@@ -38,6 +42,7 @@ builder.Services.AddSingleton<UsuariosService>();
 builder.Services.AddSingleton<ProyectosService>();
 builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<SupabaseStorageService>();
+builder.Services.AddSingleton<EmailService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

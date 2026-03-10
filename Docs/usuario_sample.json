@@ -5,7 +5,12 @@
     "nombre": "Rigel Villanueva",
     "correo": "rigel@alumno.edu",
     "rol": "estudiante",
-    "verificado": false,
+    "verificado": true,
+    "correoVerificado": false,
     "proyectos_por_calificar": [],
-    "password": "contraseña_encriptada"
+    "password": "contraseña_encriptada",
+    "codigoVerificacion": "482917",
+    "codigoExpiracion": {
+        "$date": "2026-03-10T11:30:00Z"
+    }
 }
