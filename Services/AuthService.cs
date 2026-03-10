@@ -11,13 +11,11 @@ namespace KioskoAPI.Services
     public class AuthService
     {
         private readonly UsuariosService _usuariosService;
-        private readonly EmailService _emailService;
         private readonly IConfiguration _configuration;
 
-        public AuthService(UsuariosService usuariosService, EmailService emailService, IConfiguration configuration)
+        public AuthService(UsuariosService usuariosService, IConfiguration configuration)
         {
             _usuariosService = usuariosService;
-            _emailService = emailService;
             _configuration = configuration;
         }
 
@@ -53,85 +51,8 @@ namespace KioskoAPI.Services
             if (nuevoUsuario.Rol == "estudiante") nuevoUsuario.Verificado = true;
             else nuevoUsuario.Verificado = false;
 
-            // Correo no verificado hasta que ingrese el código
-            nuevoUsuario.CorreoVerificado = false;
-
-            // Generar código de verificación de 6 dígitos
-            var codigo = new Random().Next(100000, 999999).ToString();
-            nuevoUsuario.CodigoVerificacion = codigo;
-            nuevoUsuario.CodigoExpiracion = DateTime.UtcNow.AddMinutes(15);
-
             await _usuariosService.CreateAsync(nuevoUsuario);
-
-            // Enviar correo en segundo plano (no bloquea la respuesta)
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await _emailService.SendVerificationEmailAsync(nuevoUsuario.Correo, codigo);
-                }
-                catch (Exception)
-                {
-                    // El error se registra en los logs del EmailService
-                    // El usuario puede usar resend-code para solicitar otro código
-                }
-            });
-
             return nuevoUsuario;
-        }
-
-        /// <summary>
-        /// Verifica el correo electrónico del usuario con el código de 6 dígitos.
-        /// </summary>
-        public async Task<bool> VerifyEmailAsync(string correo, string codigo)
-        {
-            var usuario = await _usuariosService.GetByCorreoAsync(correo);
-
-            if (usuario == null)
-                throw new Exception("No se encontró un usuario con ese correo.");
-
-            if (usuario.CorreoVerificado)
-                throw new Exception("Este correo ya fue verificado.");
-
-            if (usuario.CodigoVerificacion == null || usuario.CodigoExpiracion == null)
-                throw new Exception("No hay un código de verificación pendiente. Usa resend-code.");
-
-            if (usuario.CodigoExpiracion < DateTime.UtcNow)
-                throw new Exception("El código de verificación ha expirado. Usa resend-code para obtener uno nuevo.");
-
-            if (usuario.CodigoVerificacion != codigo)
-                throw new Exception("El código de verificación es incorrecto.");
-
-            // Verificar correo exitosamente
-            usuario.CorreoVerificado = true;
-            usuario.CodigoVerificacion = null;
-            usuario.CodigoExpiracion = null;
-
-            await _usuariosService.UpdateAsync(usuario.Id!, usuario);
-            return true;
-        }
-
-        /// <summary>
-        /// Reenvía un nuevo código de verificación al correo del usuario.
-        /// </summary>
-        public async Task ResendCodeAsync(string correo)
-        {
-            var usuario = await _usuariosService.GetByCorreoAsync(correo);
-
-            if (usuario == null)
-                throw new Exception("No se encontró un usuario con ese correo.");
-
-            if (usuario.CorreoVerificado)
-                throw new Exception("Este correo ya fue verificado.");
-
-            // Generar nuevo código
-            var codigo = new Random().Next(100000, 999999).ToString();
-            usuario.CodigoVerificacion = codigo;
-            usuario.CodigoExpiracion = DateTime.UtcNow.AddMinutes(15);
-
-            await _usuariosService.UpdateAsync(usuario.Id!, usuario);
-
-            await _emailService.SendVerificationEmailAsync(correo, codigo);
         }
 
         private string GenerateJwtToken(Usuario usuario)
@@ -146,8 +67,7 @@ namespace KioskoAPI.Services
                 new Claim(ClaimTypes.Email, usuario.Correo),
                 new Claim(ClaimTypes.Name, usuario.Nombre),
                 new Claim(ClaimTypes.Role, usuario.Rol),
-                new Claim("Verificado", usuario.Verificado.ToString()),
-                new Claim("CorreoVerificado", usuario.CorreoVerificado.ToString())
+                new Claim("Verificado", usuario.Verificado.ToString())
             };
 
             var token = new JwtSecurityToken(

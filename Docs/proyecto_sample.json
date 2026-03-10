@@ -19,11 +19,13 @@
         "videos": [
             {
                 "titulo": "Demo Android",
-                "url": "https://firebasestorage.com/v0/b/kiosko/video1.mp4"
+                "url": "https://firebasestorage.com/v0/b/kiosko/video1.mp4",
+                "tipo": "intro"
             },
             {
                 "titulo": "Pitch Comercial",
-                "url": "https://firebasestorage.com/v0/b/kiosko/video2.mp4"
+                "url": "https://firebasestorage.com/v0/b/kiosko/video2.mp4",
+                "tipo": "pitch"
             }
         ],
         "imagenes": [

@@ -4,7 +4,6 @@
         "required": [
             "_id",
             "correo",
-            "correoVerificado",
             "nombre",
             "password",
             "proyectos_por_calificar",
@@ -39,26 +38,7 @@
                 "description": "Debe ser 'estudiante', 'maestro' o 'admin'"
             },
             "verificado": {
-                "bsonType": "bool",
-                "description": "Verificación por administrador"
-            },
-            "correoVerificado": {
-                "bsonType": "bool",
-                "description": "Verificación de correo electrónico mediante código"
-            },
-            "codigoVerificacion": {
-                "bsonType": [
-                    "string",
-                    "null"
-                ],
-                "description": "Código de 6 dígitos para verificar el correo. Se elimina después de verificar."
-            },
-            "codigoExpiracion": {
-                "bsonType": [
-                    "date",
-                    "null"
-                ],
-                "description": "Fecha de expiración del código de verificación (15 minutos)."
+                "bsonType": "bool"
             }
         }
     }

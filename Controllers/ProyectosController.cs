@@ -84,6 +84,10 @@ namespace KioskoAPI.Controllers
                 nuevoProyecto.AutoresCorreos.Add(correo);
             }
 
+            // Validar tipos de video
+            var errorVideo = ValidarTiposVideo(nuevoProyecto);
+            if (errorVideo != null) return BadRequest(new { error = errorVideo });
+
             await _proyectosService.CreateAsync(nuevoProyecto);
 
             return CreatedAtAction(nameof(Get), new { id = nuevoProyecto.Id }, nuevoProyecto);
@@ -155,6 +159,10 @@ namespace KioskoAPI.Controllers
                 updatedProyecto.Estatus = updatedProyecto.Estatus ?? proyecto.Estatus; 
             }
 
+            // Validar tipos de video
+            var errorVideo = ValidarTiposVideo(updatedProyecto);
+            if (errorVideo != null) return BadRequest(new { error = errorVideo });
+
             await _proyectosService.UpdateAsync(id, updatedProyecto);
 
             return NoContent();
@@ -210,6 +218,34 @@ namespace KioskoAPI.Controllers
             await _proyectosService.UpdateAsync(id, proyecto);
 
             return Ok(new { mensaje = "Evaluación enviada con éxito", promedioGeneral = proyecto.PromedioGeneral });
+        }
+
+        /// <summary>
+        /// Valida que los tipos de video sean válidos y que no haya duplicados de intro o pitch.
+        /// </summary>
+        private string? ValidarTiposVideo(Proyecto proyecto)
+        {
+            if (proyecto.Evidencias?.Videos == null || proyecto.Evidencias.Videos.Count == 0)
+                return null;
+
+            var tiposValidos = new[] { "intro", "pitch", "demo", "otro" };
+
+            foreach (var video in proyecto.Evidencias.Videos)
+            {
+                if (!tiposValidos.Contains(video.Tipo.ToLower()))
+                    return $"Tipo de video '{video.Tipo}' no es válido. Usa: intro, pitch, demo u otro.";
+            }
+
+            // No puede haber más de 1 intro y más de 1 pitch
+            var intros = proyecto.Evidencias.Videos.Count(v => v.Tipo.ToLower() == "intro");
+            var pitches = proyecto.Evidencias.Videos.Count(v => v.Tipo.ToLower() == "pitch");
+
+            if (intros > 1)
+                return "Solo puede haber 1 video de tipo 'intro' por proyecto.";
+            if (pitches > 1)
+                return "Solo puede haber 1 video de tipo 'pitch' por proyecto.";
+
+            return null;
         }
     }
 }

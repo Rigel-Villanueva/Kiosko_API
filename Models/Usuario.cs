@@ -23,21 +23,10 @@ namespace KioskoAPI.Models
         [BsonElement("verificado")]
         public bool Verificado { get; set; } = false;
 
-        [BsonElement("correoVerificado")]
-        public bool CorreoVerificado { get; set; } = false;
-
         [BsonElement("proyectos_por_calificar")]
         public List<string> ProyectosPorCalificar { get; set; } = new();
 
         [BsonElement("password")]
         public string Password { get; set; } = null!; // Contraseña encriptada
-
-        [BsonElement("codigoVerificacion")]
-        [BsonIgnoreIfNull]
-        public string? CodigoVerificacion { get; set; }
-
-        [BsonElement("codigoExpiracion")]
-        [BsonIgnoreIfNull]
-        public DateTime? CodigoExpiracion { get; set; }
     }
 }
