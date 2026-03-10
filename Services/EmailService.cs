@@ -20,18 +20,18 @@ namespace KioskoAPI.Services
         }
 
         /// <summary>
-        /// Envía un correo con el código de verificación usando la API de Resend (HTTPS).
+        /// Envía un correo con el código de verificación usando la API de Brevo (HTTPS).
         /// </summary>
         public async Task SendVerificationEmailAsync(string correoDestino, string codigo)
         {
-            _logger.LogInformation("Intentando enviar correo de verificación a {correo} vía Resend API", correoDestino);
+            _logger.LogInformation("Intentando enviar correo de verificación a {correo} vía Brevo API", correoDestino);
 
             var requestBody = new
             {
-                from = $"{_emailSettings.SenderName} <{_emailSettings.SenderEmail}>",
-                to = new[] { correoDestino },
+                sender = new { name = _emailSettings.SenderName, email = _emailSettings.SenderEmail },
+                to = new[] { new { email = correoDestino } },
                 subject = "Kiosko Escolar - Código de Verificación",
-                html = $@"
+                htmlContent = $@"
                     <div style='font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;'>
                         <h2 style='color: #2c3e50; text-align: center;'>Kiosko Escolar</h2>
                         <p>Hola, gracias por registrarte en <strong>Kiosko Escolar</strong>.</p>
@@ -47,13 +47,14 @@ namespace KioskoAPI.Services
             var json = JsonSerializer.Serialize(requestBody);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", _emailSettings.ResendApiKey);
+            // Brevo usa header api-key en vez de Bearer
+            _httpClient.DefaultRequestHeaders.Remove("api-key");
+            _httpClient.DefaultRequestHeaders.Add("api-key", _emailSettings.BrevoApiKey);
 
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-                var response = await _httpClient.PostAsync("https://api.resend.com/emails", content, cts.Token);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                var response = await _httpClient.PostAsync("https://api.brevo.com/v3/smtp/email", content, cts.Token);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
@@ -62,13 +63,13 @@ namespace KioskoAPI.Services
                 }
                 else
                 {
-                    _logger.LogError("Resend respondió con error {status}: {body}", response.StatusCode, responseBody);
+                    _logger.LogError("Brevo respondió con error {status}: {body}", response.StatusCode, responseBody);
                     throw new Exception($"Error al enviar correo: {responseBody}");
                 }
             }
             catch (OperationCanceledException)
             {
-                _logger.LogError("Timeout al enviar correo a {correo} vía Resend (10 segundos)", correoDestino);
+                _logger.LogError("Timeout al enviar correo a {correo} vía Brevo (15 segundos)", correoDestino);
                 throw new Exception("El envío del correo tardó demasiado.");
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
