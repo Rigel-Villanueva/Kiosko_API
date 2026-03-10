@@ -8,22 +8,28 @@ namespace KioskoAPI.Services
     public class EmailService
     {
         private readonly EmailSettings _emailSettings;
+        private readonly ILogger<EmailService> _logger;
 
-        public EmailService(IOptions<EmailSettings> emailSettings)
+        public EmailService(IOptions<EmailSettings> emailSettings, ILogger<EmailService> logger)
         {
             _emailSettings = emailSettings.Value;
+            _logger = logger;
         }
 
         /// <summary>
         /// Envía un correo con el código de verificación al usuario.
+        /// Tiene un timeout de 10 segundos para evitar que se cuelgue.
         /// </summary>
         public async Task SendVerificationEmailAsync(string correoDestino, string codigo)
         {
+            _logger.LogInformation("Intentando enviar correo de verificación a {correo}", correoDestino);
+
             var smtpClient = new SmtpClient(_emailSettings.SmtpServer)
             {
                 Port = _emailSettings.SmtpPort,
                 Credentials = new NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
                 EnableSsl = true,
+                Timeout = 10000 // 10 segundos timeout
             };
 
             var mailMessage = new MailMessage
@@ -46,7 +52,23 @@ namespace KioskoAPI.Services
 
             mailMessage.To.Add(correoDestino);
 
-            await smtpClient.SendMailAsync(mailMessage);
+            // Enviar con timeout usando CancellationToken
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            try
+            {
+                await smtpClient.SendMailAsync(mailMessage, cts.Token);
+                _logger.LogInformation("Correo de verificación enviado exitosamente a {correo}", correoDestino);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogError("Timeout al enviar correo a {correo} (10 segundos)", correoDestino);
+                throw new Exception("El envío del correo tardó demasiado. Intenta con resend-code.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar correo a {correo}: {mensaje}", correoDestino, ex.Message);
+                throw;
+            }
         }
     }
 }

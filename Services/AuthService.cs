@@ -63,16 +63,19 @@ namespace KioskoAPI.Services
 
             await _usuariosService.CreateAsync(nuevoUsuario);
 
-            // Enviar correo con código de verificación
-            try
+            // Enviar correo en segundo plano (no bloquea la respuesta)
+            _ = Task.Run(async () =>
             {
-                await _emailService.SendVerificationEmailAsync(nuevoUsuario.Correo, codigo);
-            }
-            catch (Exception)
-            {
-                // Si falla el envío del correo, el usuario queda registrado
-                // pero puede usar resend-code para solicitar otro código
-            }
+                try
+                {
+                    await _emailService.SendVerificationEmailAsync(nuevoUsuario.Correo, codigo);
+                }
+                catch (Exception)
+                {
+                    // El error se registra en los logs del EmailService
+                    // El usuario puede usar resend-code para solicitar otro código
+                }
+            });
 
             return nuevoUsuario;
         }
