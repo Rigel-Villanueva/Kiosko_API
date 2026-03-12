@@ -26,6 +26,8 @@ namespace KioskoAPI.Controllers
         /// <returns>La URL pública lista para ser adjuntada al JSON del Proyecto</returns>
         [HttpPost]
         [Authorize(Roles = "estudiante")] // Solo los estudiantes deberían estar subiendo archivos de proyecto
+        [RequestSizeLimit(150 * 1024 * 1024)] // 150 MB
+        [RequestFormLimits(MultipartBodyLengthLimit = 150 * 1024 * 1024)] // 150 MB
         public async Task<IActionResult> UploadFile(IFormFile requestFile)
         {
             try

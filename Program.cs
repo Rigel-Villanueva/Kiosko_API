@@ -6,6 +6,12 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Aumentar límite de Kestrel a 150 MB para videos grandes
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 150 * 1024 * 1024; // 150 MB
+});
+
 // Configure MongoDB options
 builder.Services.Configure<KioskoDatabaseSettings>(
     builder.Configuration.GetSection("KioskoDatabase"));
@@ -40,6 +46,12 @@ builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<SupabaseStorageService>();
 
 builder.Services.AddControllers();
+
+// Aumentar límite de formularios multipart a 150 MB
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 150 * 1024 * 1024; // 150 MB
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
