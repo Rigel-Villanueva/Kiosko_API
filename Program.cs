@@ -45,7 +45,15 @@ builder.Services.AddSingleton<ProyectosService>();
 builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<SupabaseStorageService>();
 
-builder.Services.AddCors();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 builder.Services.AddControllers();
 
 // Aumentar límite de formularios multipart a 150 MB
@@ -97,10 +105,7 @@ app.UseDeveloperExceptionPage(); // 🔥 FORZAR VER ERRORES EN RENDER 🔥
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors(policy => policy
-    .AllowAnyOrigin()
-    .AllowAnyMethod()
-    .AllowAnyHeader());
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
