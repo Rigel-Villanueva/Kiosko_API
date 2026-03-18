@@ -49,9 +49,14 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(
+                "https://kioskoadmin.netlify.app",
+                "http://localhost:5500",
+                "http://127.0.0.1:5500"
+              )
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials(); // Importante para enviar Authorization headers
     });
 });
 builder.Services.AddControllers();
