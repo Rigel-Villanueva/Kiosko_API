@@ -31,6 +31,9 @@ namespace KioskoAPI.Models
         [BsonElement("promedio_general")]
         public double PromedioGeneral { get; set; } = 0;
 
+        [BsonElement("tecnologias")]
+        public List<string> Tecnologias { get; set; } = new();
+
         [BsonElement("evidencias")]
         public Evidencias? Evidencias { get; set; }
 
