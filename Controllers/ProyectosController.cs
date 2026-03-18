@@ -93,6 +93,35 @@ namespace KioskoAPI.Controllers
             return CreatedAtAction(nameof(Get), new { id = nuevoProyecto.Id }, nuevoProyecto);
         }
 
+        /// <summary>
+        /// Solo Admin. Permite al administrador subir un proyecto directamente.
+        /// El proyecto se crea como "aprobado" por defecto (el admin puede cambiar el estatus).
+        /// </summary>
+        [HttpPost("admin")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> PostAdmin([FromBody] Proyecto nuevoProyecto)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null) return Unauthorized();
+
+            nuevoProyecto.SubidoPor = userId;
+            nuevoProyecto.FechaCreacion = DateTime.UtcNow;
+
+            // Si el admin no especifica estatus, lo ponemos como aprobado directamente
+            if (string.IsNullOrEmpty(nuevoProyecto.Estatus) || nuevoProyecto.Estatus == "pendiente")
+            {
+                nuevoProyecto.Estatus = "aprobado";
+            }
+
+            // Validar tipos de video
+            var errorVideo = ValidarTiposVideo(nuevoProyecto);
+            if (errorVideo != null) return BadRequest(new { error = errorVideo });
+
+            await _proyectosService.CreateAsync(nuevoProyecto);
+
+            return CreatedAtAction(nameof(Get), new { id = nuevoProyecto.Id }, nuevoProyecto);
+        }
+
         // PUT: api/Proyectos/{id}/aprobar (Solo Admin aprueba)
         [HttpPut("{id:length(24)}/aprobar")]
         [Authorize(Roles = "admin")]

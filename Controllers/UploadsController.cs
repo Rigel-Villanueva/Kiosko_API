@@ -25,7 +25,7 @@ namespace KioskoAPI.Controllers
         /// <param name="requestFile">El archivo físico subido a través de multipart/form-data</param>
         /// <returns>La URL pública lista para ser adjuntada al JSON del Proyecto</returns>
         [HttpPost]
-        [Authorize(Roles = "estudiante")] // Solo los estudiantes deberían estar subiendo archivos de proyecto
+        [Authorize(Roles = "estudiante,admin")] // Estudiantes y admins pueden subir archivos de proyecto
         [RequestSizeLimit(150 * 1024 * 1024)] // 150 MB
         [RequestFormLimits(MultipartBodyLengthLimit = 150 * 1024 * 1024)] // 150 MB
         public async Task<IActionResult> UploadFile(IFormFile requestFile)
@@ -55,7 +55,7 @@ namespace KioskoAPI.Controllers
         /// </summary>
         /// <param name="url">La URL pública del archivo a eliminar</param>
         [HttpDelete]
-        [Authorize(Roles = "estudiante")]
+        [Authorize(Roles = "estudiante,admin")]
         public async Task<IActionResult> DeleteFile([FromQuery] string url)
         {
             try
