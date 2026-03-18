@@ -45,6 +45,7 @@ builder.Services.AddSingleton<ProyectosService>();
 builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<SupabaseStorageService>();
 
+builder.Services.AddCors();
 builder.Services.AddControllers();
 
 // Aumentar límite de formularios multipart a 150 MB
