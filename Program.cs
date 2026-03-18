@@ -47,16 +47,11 @@ builder.Services.AddSingleton<SupabaseStorageService>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins(
-                "https://kioskoadmin.netlify.app",
-                "http://localhost:5500",
-                "http://127.0.0.1:5500"
-              )
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials(); // Importante para enviar Authorization headers
+              .AllowAnyHeader();
     });
 });
 builder.Services.AddControllers();
@@ -110,7 +105,9 @@ app.UseDeveloperExceptionPage(); // 🔥 FORZAR VER ERRORES EN RENDER 🔥
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors();
+app.UseRouting();
+
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
