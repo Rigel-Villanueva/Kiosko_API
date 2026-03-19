@@ -23,6 +23,7 @@ namespace KioskoAPI.Models
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
         [BsonElement("autores_correos")]
+        [System.Text.Json.Serialization.JsonPropertyName("autoresCorreos")]
         public List<string> AutoresCorreos { get; set; } = new();
 
         [BsonElement("estatus")]
