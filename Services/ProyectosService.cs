@@ -15,8 +15,12 @@ namespace KioskoAPI.Services
             _proyectosCollection = mongoDatabase.GetCollection<Proyecto>(kioskoDatabaseSettings.Value.ProjectsCollectionName);
         }
 
-        public async Task<List<Proyecto>> GetAsync() =>
-            await _proyectosCollection.Find(_ => true).ToListAsync();
+        public async Task<List<Proyecto>> GetAsync()
+        {
+            var proyectos = await _proyectosCollection.Find(_ => true).ToListAsync();
+            proyectos.ForEach(SortVideos);
+            return proyectos;
+        }
 
         public async Task<List<Proyecto>> GetAprobadosAsync(string? nombre = null, string? autor = null, double? minCal = null, double? maxCal = null)
         {
@@ -46,14 +50,24 @@ namespace KioskoAPI.Services
                 filter &= builder.Lte(x => x.PromedioGeneral, maxCal.Value);
             }
 
-            return await _proyectosCollection.Find(filter).ToListAsync();
+            var proyectos = await _proyectosCollection.Find(filter).ToListAsync();
+            proyectos.ForEach(SortVideos);
+            return proyectos;
         }
 
-        public async Task<List<Proyecto>> GetMisProyectosAsync(string correo) =>
-            await _proyectosCollection.Find(x => x.AutoresCorreos.Contains(correo)).ToListAsync();
+        public async Task<List<Proyecto>> GetMisProyectosAsync(string correo)
+        {
+            var proyectos = await _proyectosCollection.Find(x => x.AutoresCorreos.Contains(correo)).ToListAsync();
+            proyectos.ForEach(SortVideos);
+            return proyectos;
+        }
 
-        public async Task<Proyecto?> GetAsync(string id) =>
-            await _proyectosCollection.Find(x => x.Id == id).FirstOrDefaultAsync();
+        public async Task<Proyecto?> GetAsync(string id)
+        {
+            var proyecto = await _proyectosCollection.Find(x => x.Id == id).FirstOrDefaultAsync();
+            if (proyecto != null) SortVideos(proyecto);
+            return proyecto;
+        }
 
         public async Task CreateAsync(Proyecto nuevoProyecto) =>
             await _proyectosCollection.InsertOneAsync(nuevoProyecto);
@@ -70,5 +84,19 @@ namespace KioskoAPI.Services
 
         public async Task RemoveAsync(string id) =>
             await _proyectosCollection.DeleteOneAsync(x => x.Id == id);
+
+        private void SortVideos(Proyecto proyecto)
+        {
+            if (proyecto.Evidencias?.Videos != null && proyecto.Evidencias.Videos.Count > 1)
+            {
+                proyecto.Evidencias.Videos = proyecto.Evidencias.Videos.OrderBy(v => 
+                {
+                    var title = v.Titulo?.ToLower() ?? "";
+                    if (title == "intro") return 1;
+                    if (title == "pitch") return 2;
+                    return 3;
+                }).ToList();
+            }
+        }
     }
 }
