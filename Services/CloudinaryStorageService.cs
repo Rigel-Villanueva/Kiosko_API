@@ -8,7 +8,6 @@ namespace KioskoAPI.Services
     public class CloudinaryStorageService
     {
         private readonly Cloudinary _cloudinary;
-        private readonly string _folderName = "evidencias";
 
         public CloudinaryStorageService(IConfiguration configuration)
         {
@@ -19,6 +18,19 @@ namespace KioskoAPI.Services
             var account = new Account(cloudName, apiKey, apiSecret);
             _cloudinary = new Cloudinary(account);
             _cloudinary.Api.Secure = true;
+        }
+
+        private string GetFolderForExtension(string extension)
+        {
+            var ext = extension.ToLower();
+            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp")
+                return "Kiosko/imagenes";
+            if (ext == ".mp4" || ext == ".mov" || ext == ".avi" || ext == ".mkv" || ext == ".webm")
+                return "Kiosko/videos";
+            if (ext == ".pdf" || ext == ".doc" || ext == ".docx" || ext == ".ppt" || ext == ".pptx" || ext == ".xls" || ext == ".xlsx")
+                return "Kiosko/documentos";
+            
+            return "Kiosko/otros";
         }
 
         public async Task<string> UploadFileAsync(IFormFile file)
@@ -34,32 +46,12 @@ namespace KioskoAPI.Services
 
             using var stream = file.OpenReadStream();
             
-            var uploadParams = new RawUploadParams()
-            {
-                File = new FileDescription(cleanFileName + extension, stream),
-                PublicId = $"{_folderName}/{cleanFileName}",
-                UseFilename = true,
-                UniqueFilename = false,
-                Overwrite = true
-            };
+            var folder = GetFolderForExtension(extension);
 
-            // Cloudinary differentiates RawUpload for non-images and ImageUpload for images
-            // A safer approach for everything (PDFs, PPT, Images) is auto-detect or Raw
-            // We use upload with resourceType auto
-            var genericUploadParams = new ImageUploadParams()
-            {
-                File = new FileDescription(cleanFileName + extension, stream),
-                PublicId = $"{_folderName}/{cleanFileName}",
-                UseFilename = true,
-                UniqueFilename = false,
-                Overwrite = true
-            };
-            
-            // To handle documents/PDFs and images universally use generic Upload method:
             var autoUploadParams = new AutoUploadParams()
             {
                 File = new FileDescription(cleanFileName + extension, stream),
-                PublicId = $"{_folderName}/{cleanFileName}",
+                PublicId = $"{folder}/{cleanFileName}",
                 UseFilename = true,
                 UniqueFilename = false,
                 Overwrite = true
@@ -86,10 +78,12 @@ namespace KioskoAPI.Services
             var uniqueFileName = $"{DateTime.UtcNow:yyyyMMddHHmmss}_{Guid.NewGuid().ToString().Substring(0,8)}";
             var cleanFileName = Regex.Replace(uniqueFileName, @"[^a-zA-Z0-9_\-\.]", "_");
 
+            var folder = GetFolderForExtension(extension);
+
             var autoUploadParams = new AutoUploadParams()
             {
                 File = new FileDescription(cleanFileName + extension, stream),
-                PublicId = $"{_folderName}/{cleanFileName}",
+                PublicId = $"{folder}/{cleanFileName}",
                 UseFilename = true,
                 UniqueFilename = false,
                 Overwrite = true
@@ -117,17 +111,20 @@ namespace KioskoAPI.Services
             var uri = new Uri(fileUrl);
             var segments = uri.Segments;
 
-            // Example path: /<cloud_name>/image/upload/v1234567/evidencias/123456.jpg
-            // Let's find "evidencias/" in the URL string
-            
-            int folderIndex = fileUrl.IndexOf($"/{_folderName}/");
+            // Compatibilidad con los archivos migrados previamente en /evidencias/ y los nuevos en /Kiosko/
+            int folderIndex = fileUrl.IndexOf("/Kiosko/");
+            if (folderIndex == -1)
+            {
+                folderIndex = fileUrl.IndexOf("/evidencias/");
+            }
+
             if (folderIndex == -1)
             {
                 throw new ArgumentException("La URL no pertenece al storage de este proyecto de Cloudinary.");
             }
 
-            // Extract the path after upload version /.../evidencias/...
-            string pathAfterFolder = fileUrl.Substring(folderIndex + 1); // e.g. "evidencias/archivo123.jpg"
+            // Extract the path after upload version /.../Kiosko/...
+            string pathAfterFolder = fileUrl.Substring(folderIndex + 1); // e.g. "Kiosko/imagenes/archivo123.jpg"
             
             // For images/videos, Cloudinary removes extension for PublicId, but for raw files it keeps it.
             // Let's just remove extension as a standard assumption for AutoUpload:
