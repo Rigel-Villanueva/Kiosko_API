@@ -43,7 +43,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddSingleton<UsuariosService>();
 builder.Services.AddSingleton<ProyectosService>();
 builder.Services.AddSingleton<AuthService>();
-builder.Services.AddSingleton<SupabaseStorageService>();
+builder.Services.AddSingleton<CloudinaryStorageService>();
 
 builder.Services.AddCors(options =>
 {
