@@ -51,7 +51,8 @@ namespace KioskoAPI.Services
             var autoUploadParams = new AutoUploadParams()
             {
                 File = new FileDescription(cleanFileName + extension, stream),
-                PublicId = $"{folder}/{cleanFileName}",
+                Folder = folder,
+                PublicId = cleanFileName,
                 UseFilename = true,
                 UniqueFilename = false,
                 Overwrite = true
@@ -83,7 +84,8 @@ namespace KioskoAPI.Services
             var autoUploadParams = new AutoUploadParams()
             {
                 File = new FileDescription(cleanFileName + extension, stream),
-                PublicId = $"{folder}/{cleanFileName}",
+                Folder = folder,
+                PublicId = cleanFileName,
                 UseFilename = true,
                 UniqueFilename = false,
                 Overwrite = true
